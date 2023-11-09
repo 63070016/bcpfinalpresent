@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADD ELB MEMBER</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include Bootstrap CSS from a CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Popper.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.3/umd/popper.min.js"></script>
+    
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <!-- Load jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Load Popper.js (before Bootstrap.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.3/umd/popper.min.js"></script>
+    <!-- Load Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Load Bootstrap JavaScript (after jQuery and Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcOiGjk/bSuGGKHEyjSoQ1zVisanQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #749BC2;">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fa-solid fa-cloud fa-bounce fa-2xl" style="color: #052357;"></i>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fs-5 fs-md-6" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Services
+                        </a>
+                        <div class="dropdown-menu fs-5" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="/create_ims">IMS</a>
+                            <a class="dropdown-item" href="/create_ecs">ECS</a>
+                            <a class="dropdown-item" href="/rds">RDS</a>
+                            <a class="dropdown-item" href="/create_elb">Create ELB</a>
+                            <a class="dropdown-item" href="/addelb_member">Add ELB Member</a>
+                        </div>
+                    </li>
+        
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="nav-item">
+                        <a class="nav-link fs-5 fs-md-6" href="/logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+                
+            </div>
+        </div>
+    </nav>
+
+    <section class="vh-100 d-flex align-items-start justify-content-center " style="background-color: #F6F4EB;">
+        <div class="container mt-4">
+            <div class="row justify-content-center animate-fade-in">
+                <div class="col-12 animate-fade-in-home">
+                    
+                    <div class="card ">
+                        
+                        <div class="card-body" style="border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); background-color: #ffffff;">
+                            <h1 class="display-4">Pool ELB List</h1>
+
+                            <div id="poolList" class="mt-4">
+                                <!-- ELB dropdown list -->
+                                <div class="form-group">
+                                    <label for="pool" style="font-size: 1.2rem;">Select a Pool of backend server group:</label>
+                                    <select id="poolSelect" class="form-control form-control-lg mt-4">
+                                        {% for pool in pools %}
+                                        <option value="{{ pool.id }}">{{ pool.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Add a button to fetch ELB details -->
+                            <button id="getinstanceDetailsBtn" class="btn btn-primary btn-lg mt-3">Select Instance Subnet</button>
+
+                            <!-- Display the selected ELB details here -->
+
+                            <div id="instancesDiv" class="mt-4">
+                                <div class="form-group">
+                                    <label for="instanceSelect" style="font-size: 1.2rem;">Select a Instance:</label>
+                                    <select id="instanceSelect" class="form-control form-control-lg mt-4" disabled></select>
+                                </div>
+
+                                <button id="createMemBtn" class="btn btn-success btn-lg mt-3">Create Member</button>
+                                <div id="processingMessage" style="display: none; color: blue;">Processing...</div>
+                            </div>
+
+                            <!-- Display the selected instance_id here -->
+                            <div id="ecsIdDisplay" class="mt-3"></div>
+
+                            
+
+
+
+                                
+                                <div id="resultDiv" class="mt-4"></div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                
+            </div>
+        </div>
+    </section>
+
+
+<script>
+    $(document).ready(function () {
+        $("#instancesDiv").hide();
+        $("#resultDiv").hide();
+        $("#subnetsDiv").hide();
+        $("#instanceSelect").prop("disabled", true); // Initially disable the backup dropdown
+        $("#subnetSelect").prop("disabled", true); // Initially disable the backup dropdown
+        $("#processingMessage").hide();
+
+        // Fetch ELB data when the button is clicked
+        $("#getinstanceDetailsBtn").click(function () {
+            const selectedPool = $("#poolSelect").val();
+
+            const poolName = $("#poolSelect option:selected").text();
+            // Perform an AJAX request to fetch ELB details based on the selectedElb
+            $.ajax({
+                type: "POST",
+                url: '/pool_ecs',
+                data: { pool_id: selectedPool , pool_name: poolName},
+                    success: function (data) {
+                        $("#instanceSelect").empty();
+                        if (data.ecs.length === 0) {
+                            alert(data.message);
+                        } else {
+                            $("#instanceSelect").prop("disabled", false); // Enable the backup dropdown
+                            data.ecs.forEach(function (ecs) {
+                                $("#instanceSelect").append(new Option(ecs.name, ecs.id));
+                            });
+                            $("#instancesDiv").show();
+                        }
+                    }
+            });
+        });
+
+
+        $("#createMemBtn").click(function () {
+            const ecsId = $("#instanceSelect").val();
+            const selectedPool = $("#poolSelect").val();
+            const poolName = $("#poolSelect option:selected").text();
+            const userPassword = prompt("Please enter your password ADD ELB Member:");
+            $("#ecsIdDisplay").text(`Selected ECS ID: ${ecsId}`);
+            $("#processingMessage").show();
+
+            if (userPassword === "1234") {
+                $.ajax({
+                    type: "POST",
+                    url: "/interfaces",
+                    data: { ecs_id: ecsId, pool_id: selectedPool, pool_name: poolName},
+                    success: function (data) {
+                        $("#processingMessage").hide();
+                        $("#resultDiv").text(data.message);
+                        $("#resultDiv").show();
+                        alert("Add Member successful!");
+                    },
+                    error: function (error) {
+                        // Handle errors here if the request fails
+                        $("#processingMessage").hide();
+
+                        alert("Request failed: " + error.responseJSON.subnet_id);
+                        $("#resultDiv").text("Subnet ID: " + error.responseJSON.subnet_id);
+                        $("#resultDiv").show();
+                    }
+                });
+            }
+            else {
+                $("#processingMessage").hide();
+                alert("Incorrect password. ECS creation canceled.");
+            }
+                
+        });
+
+        
+    });
+</script>
+
+<!-- Include Bootstrap JS from a CDN (at the end of the body for best practices) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
